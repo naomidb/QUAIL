@@ -1,0 +1,6 @@
+# use true or a string to specify the batch you want to use
+# to generate sql
+batch_select_strategy:
+  recent: true
+  oldest: false
+  name: false

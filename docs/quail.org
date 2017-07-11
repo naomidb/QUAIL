@@ -1,0 +1,228 @@
+* QUAIL
+QUAIL Universal Analytics of Informatic Linkages
+
+* Scenario
+Quilliam the quail wants a warehouse of data available to him which can link many
+different types of data together. It is important as well that it is able to pull
+down and analyze this data locally so that it can be backed up and reported on at
+future points in time.
+
+* Implementation
+** Metadata
+This project has a lot of metadata involved that describes what is in the system.
+Therefore there needs to be a structured way to keep it around and instrospect it.
+We use a sqlite3 database that can be attached to other databases in order to hold
+this information
+
+*** Getting started
+You will need to fill out the correct redcap url and token into the settings.yaml
+file so that the code knows where to look.
+
+*** A note about subjects
+In redcap, there is a 'primary id' for uniquely identifying subjects. According to
+[[http://sburns.org/2013/07/22/intro-to-redcap-api.html][Ken Burns]] this is always the first value returned in a metadata request. Additionally
+there can be a secondary_unique_field which is given in a project info export.
+ 
+*** Limitations
+- This has only been tested with longitudinal projects so far and none with repeat forms
+- This process can work to have multiple redcaps in the same database, but one needs to 
+change the settings file for each one.
+- This process was initially written with the bolt driver which is not as good as the
+http api. In the future, this should be refactored out
+
+** Records
+This project is also meant to pull down the records so that they can be arranged
+in a way that makes querying easier. This process takes a long time depending
+on the size of the redcap. You should use the `screen` or `tmux` commands.
+
+The records will be saved in the `data_root` field of the settings.yaml. If this is
+not provided, then it will save the records in a `records` directory in the location 
+that the code was run.
+
+*** Directory structure
+Due to inode constraints on macs, batches needed to have a more complex directory 
+structure than initially desired.
+
+Here are some examples about where you would find information in a batch; all paths should
+be prepended with whatever your data root is
+
+| data                                                            | path                                                                        |
+|-----------------------------------------------------------------+-----------------------------------------------------------------------------|
+| the records for all subjects chemistry labs from redcap         | batch_name/redcap_data_files/chemistry_lab.json                             |
+| the records for all subjects neuro labs from redcap             | batch_name/redcap_data_files/neuro_lab.json                                 |
+| the records for all subjects neuro labs from redcap, in batch_2 | batch_2/redcap_data_files/neuro_lab.json                                    |
+| subject 1, event 1_arm_1, chemistry lab                         | batch_name/1/subject_data_1/1_arm_1/chemistry_lab.json                      |
+| subject 1, event 154_arm_1, chemistry lab                       | batch_name/1/subject_data_1/154_arm_1/chemistry_lab.json                    |
+| subject 17, event 1_arm_1, chemistry lab                        | batch_name/1/7/subject_data_17/1_arm_1/chemistry_lab.json                   |
+| subject 17, event 1_arm_1, neuro lab                            | batch_name/1/7/subject_data_17/1_arm_1/neuro_lab.json                       |
+| subject 97, event 1_arm_1, chemistry lab                        | batch_name/9/7/subject_data_97/1_arm_1/chemistry_lab.json                   |
+| subject 97-VA-78, event 1_arm_1, chemistry lab                  | batch_name/9/7/-/V/A/-/7/8/subject_data_97-VA-78/1_arm_1/chemistry_lab.json |
+
+The batch name comes from a combination of the redcap name and the date it was pulled.
+The subject digit/character directory structure comes from the unique field.
+The event comes from the unique event name in redcap.
+The instrument comes from the instrument name plus a '.json' extension.
+
+
+** SQL database of records
+
+Utilizes sqlite3. Using the `SchemaBuilder` class the database schema is generated.
+It has been tested with sqlite3 on a mac.
+
+*** Schema
+The schema is build by running `python build_schema.py`. You will find the generated
+schema file with the name `schema.sql` in the directory in which the script was ran.
+Note that you need a running, initialized neo4j database to build this.
+
+The tables are:
+
+subject
+| col        | type             |
+|------------+------------------|
+| dm_subjid  | text primary key |
+| dm_usubjid | text             |
+
+batch
+| col          | type             |
+|--------------+------------------|
+| batch_name   | text primary key |
+| path         | text             |
+| archive_path | text             |
+| datetime     | text             |
+| redcap_node  | text             |
+
+The redcap_node column in the batch table specifies the neo4j node that contains the information
+about the redcap instance from which the data was pulled
+
+And then there are tables for each form in the neo4j database.
+Those tables have columns for each field and then three additional linking the subject,
+event and batch together. 
+
+NOTE: there will be a form_complete field with every form which is not listed in the metadata.
+This is something that is a redcap default and will come down with the records so it should be
+saved in the database as well
+
+my_redcap_form
+| col                | type                 |
+|--------------------+----------------------|
+| sql_id             | integer primary keys |
+| batch_id           | text foreign key     |
+| subject_id         | text foreign key     |
+| my_field_name      | text                 |
+| ...                | ...                  |
+| my_last_field_name | text                 |
+| form_complete      | text                 |
+
+**** Checkboxes
+Checkbox fields have a select_choices_or_calculations property in the metadata export.
+These are of the form:
+
+"VALUE, DISPLAY | ... | LAST_VALUE, LAST_DISPLAY"
+
+It appears that the first comma is what delineates the value that is stored in the field
+from the displayed value. NOTE that the display can contain multiple commas, it is simply the first
+that separates the two.
+
+These value display options are created in the sql database as lookup tables:
+
+field_name
+| col         | type             | note                                                |
+|-------------+------------------+-----------------------------------------------------|
+| export_name | text primary key | what the key will come back as when doing an export |
+| display     | text             | second part of the select choices                   |
+| value       | text             | first part of the select choices                    |
+
+
+When pulling these records from redcap, the record object will have extra keys not listed in the metadata.
+The format is "fieldname___value"; the important part is the three underscores. These separate
+the checkbox fieldname from the value of the checkbox. 
+
+EX:
+
+Which colors do you like?
+- [X] red
+- [ ] blue
+- [X] green
+
+The export for this would look like:
+color___1: 1
+color___2: 0
+color___3: 1
+
+We adopt the same thing for 
+**** Dropdowns 
+These are basically normal fields except they have their lookup values stored in the database.
+Tables that are drop down lookups are prefixed with 'dropdown'
+
+*** Limitations
+
+- These sql databases are only able to take in redcap records at this point.
+- The setup for these databases in terms of what the keys are is not very configurable.
+There is work that will need to be done in order to make it automatically generate the
+right primary keys and foreign key relationships
+- The sql database needs to be represented as a store in the metadata database. That way
+we can see what batches and stuff are pushed in.
+- The database cannot handle checkbox values since these are recieved from redcap in a strange
+triple underscore encoding format
+
+*** Redcap issues
+
+occasionally there will be records that have fields with three '_' in them. These are not
+present in the metadata and usually have either an emptry string or a '0' in them. I dont
+know what these are for but they are ignored when inserting them into the sql database
+because they are not grabbed with the metadata
+
+
+** Redi runs
+Redi runs can be stored in the metadata database as well. 
+
+nodes and their fields
+
+site
+| name   | example |
+|--------+---------|
+| name   |    yale |
+| prefix |     001 |
+| lat    |      45 |
+| long   |      78 |
+
+csv_def
+| name    |  example |
+|---------+----------|
+| subject | STUDY_ID |
+
+redi_configs
+| name    | example              |
+|---------+----------------------|
+| tool    | pigeon               |
+| path    | /configs/pigeon.json |
+| version | 0.0.1                |
+
+redi_run -[:CONTAINED_SUBJECT]->(:Subject)
+| name       | example              |
+|------------+----------------------|
+| time       | tuesday the 8th, 5pm |
+| datapoints | 454                  |
+| duration   | 4 minutes            |
+
+logs
+| name | example                       |
+|------+-------------------------------|
+| tool | lineman                       |
+| path | /redi2/site/logs/lineman.json |
+
+configs will link to the site and the csv_definition.
+runs will be attached to subjects and sites will be attached to redcap nodes
+
+*** Limitations
+- This has not been done
+- redi2 has no way to do this at present, this should probably be a hawkeye module
+
+** Redis database
+Not yet implemented. 
+
+** Frontend
+Not yet implemented.
+
+needs facility to run reports at particular times
+ 

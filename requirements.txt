@@ -1,0 +1,12 @@
+-e git+git@github.com:PFWhite/cappy.git@c0e40a22378bd5ca33021543ab6449839facc718#egg=cappy
+certifi==2017.4.17
+chardet==3.0.3
+idna==2.5
+Jinja2==2.9.6
+MarkupSafe==1.0
+python-cappy==0.0.2
+python-dateutil==2.6.0
+PyYAML==3.12
+requests==2.17.3
+six==1.10.0
+urllib3==1.21.1

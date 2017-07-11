@@ -1,0 +1,2 @@
+include quail/reports/*
+include quail/sql_files/*
