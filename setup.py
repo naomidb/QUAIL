@@ -11,7 +11,7 @@ config = {
     'download_url': 'Where to download it.',
     'author_email': 'pfwhite9@gmail.com',
     'version': '0.1.0',
-    'install_requires': ['nose', 'docopt', 'cappy', 'pyyaml', 'requests'],
+    'install_requires': ['nose', 'docopt', 'cappy', 'pyyaml'],
     'include_package_data': True,
     'packages': find_packages(),
     'scripts': [],

@@ -70,6 +70,10 @@ def main(args):
     if args.get('install'):
         install.run(args.get('<root>'))
 
+    if args.get('dropper'):
+        if args.get('image_metadata'):
+            actions.dropper.get_metadata(**conf)
+
     if args.get('redcap'):
         conf = {
             'project_name': args.get('<project_name>'),
@@ -82,11 +86,11 @@ def main(args):
                             url=args.get('<url>'),
                             init=args.get('-i'))
         elif args.get('get_meta'):
-            redcap.get_metadata(**conf)
+            redcap.get_meta(**conf)
         elif args.get('get_data'):
-            redcap.get_batch(**conf)
+            redcap.get_data(**conf)
         elif args.get('gen_meta'):
-            redcap.generate_metadata_db(**conf)
+            redcap.gen_meta(**conf)
         elif args.get('gen_data'):
             redcap.gen_data(**conf)
 

@@ -1,0 +1,9 @@
+write down and draw a picture of what quail would look like with 7 data sources
+on prod
+
+say this to chris on reviews
+"quail is my mysql-autobackup for any data source"
+
+pip issues with installing
+main functions having incorrect names
+redcap_batch module incorrectly named

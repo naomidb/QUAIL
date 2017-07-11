@@ -50,7 +50,7 @@ def get_meta(quail_conf, project_name):
     file_util.write(quail_conf + '.bak', quail_data, 'yaml')
     proj_data = copy(quail_data['sources'][project_name])
     del proj_data['notes']
-    project = redcap.Batcher(**proj_data)
+    project = redcap_batch.Batcher(**proj_data)
     project.pull_metadata()
     print('Done pulling metadata for {}'.format(project_name))
 
@@ -69,7 +69,7 @@ def get_data(quail_conf, project_name, pull_metadata=True):
     quail_data = file_util.read(quail_conf, 'yaml')
     proj_data = copy(quail_data['sources'][project_name])
     del proj_data['notes']
-    project = redcap.Batcher(**proj_data)
+    project = redcap_batch.Batcher(**proj_data)
     project.pull_data()
     quail_data['sources'][project_name]['notes']['unique_field'] = project.unique_field
     end = datetime.datetime.now()
