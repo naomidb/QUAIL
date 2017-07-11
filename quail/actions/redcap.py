@@ -186,6 +186,7 @@ def gen_data(quail_conf, project_name):
                 cols = [row[name_index] for row in table_info if not row[is_pk_index]]
             else:
                 cols = [row[name_index] for row in table_info]
+            cols.append('redcap_event_name')
             vals = []
             if type(data) != type([]):
                 data = [data]

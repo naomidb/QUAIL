@@ -32,6 +32,7 @@ class Instrumentor(file_util):
             [export_name for export_name, value, display in parsed_select_choices]
         ))
         texttype = repeat('TEXT')
+        field_names.insert(0, 'redcap_event_name')
         if instrument_name != self.unique_field['form_name']:
             field_names.insert(0, self.unique_field['field_name'])
 
