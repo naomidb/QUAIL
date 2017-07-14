@@ -102,27 +102,28 @@ def gen_meta(quail_conf, project_name):
     arm = redcap_metadata.Arm(most_recent_batch_path)
     event = redcap_metadata.Event(most_recent_batch_path)
     instrument = redcap_metadata.Instrument(most_recent_batch_path)
+    instrument_event = redcap_metadata.InstrumentEvent(most_recent_batch_path)
     field = redcap_metadata.Field(most_recent_batch_path)
     project = redcap_metadata.Project(most_recent_batch_path)
-    junctions = redcap_metadata.JunctionTables()
 
     db.create_table(**{
         'tables': [
             arm.table_data,
             event.table_data,
             instrument.table_data,
+            instrument_event.table_data,
             field.table_data,
             project.table_data
         ]
     }).executescript()
 
-    db.create_table(**{'tables': junctions.tables }).executescript()
-
-    res = db.insert(**arm.insert_data).execute()
-
+    db.insert(**arm.insert_data).execute()
+    db.commit()
     db.insert(**event.insert_data).execute()
     db.commit()
     db.insert(**instrument.insert_data).execute()
+    db.commit()
+    db.insert(**instrument_event.insert_data).execute()
     db.commit()
     db.insert(**field.insert_data).execute()
     db.commit()

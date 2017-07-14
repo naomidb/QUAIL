@@ -11,8 +11,8 @@ class TableMaker(FileManipulationMixin):
     def make_schema(self, tablename, primary_key):
         table = {}
         table['tablename'] = tablename
-        table['primary_key'] = primary_key
-        table['primary_key_type'] = 'TEXT'
+        table['primary_key'] = primary_key or 'sqlid'
+        table['primary_key_type'] = 'TEXT' if primary_key else 'INTEGER'
         if not type(self.data) == type([]):
             self.data = [self.data]
         for key, val in self.data[0].items():
@@ -39,6 +39,7 @@ class TableMaker(FileManipulationMixin):
             vals.append(escaped)
         return inserts
 
+
     def escape(self, string):
         string = string.replace("\'", "\'\'")
         if string == 'None':
@@ -59,6 +60,10 @@ class Instrument(TableMaker):
     def __init__(self, batch_root):
         super().__init__('instrument_name', batch_root, 'instruments.json', 'instrument')
 
+class InstrumentEvent(TableMaker):
+    def __init__(self, batch_root):
+        super().__init__(None, batch_root, 'instrument_event.json', 'instrument_event')
+
 class Field(TableMaker):
     def __init__(self, batch_root):
         super().__init__('field_name', batch_root, 'metadata.json', 'field')
@@ -66,123 +71,3 @@ class Field(TableMaker):
 class Project(TableMaker):
     def __init__(self, batch_root):
         super().__init__('project_title', batch_root, 'project_info.json', 'project')
-
-class JunctionTables():
-        tables = [
-            {
-                'tablename': 'project_arm',
-                'primary_key': 'id',
-                'primary_key_type': 'INTEGER',
-                'coldefs': [
-                    {
-                        'field': 'project_title',
-                        'type': 'TEXT'
-                    },
-                    {
-                        'field': 'arm_num',
-                        'type': 'TEXT'
-                    }
-                ],
-                'foreign_keys': [
-                    {
-                        'field': 'project_title',
-                        'other_table': 'project',
-                        'other_key': 'project_title',
-                        'fk_subclause': '',
-                    },
-                    {
-                        'field': 'arm_num',
-                        'other_table': 'arm',
-                        'other_key': 'arm_num',
-                        'fk_subclause': '',
-                    },
-                ]
-            },
-            {
-                'tablename': 'arm_event',
-                'primary_key': 'id',
-                'primary_key_type': 'INTEGER',
-                'coldefs': [
-                    {
-                        'field': 'arm_num',
-                        'type': 'TEXT'
-                    },
-                    {
-                        'field': 'unique_event_name',
-                        'type': 'TEXT'
-                    }
-                ],
-                'foreign_keys': [
-                    {
-                        'field': 'arm_num',
-                        'other_table': 'arm',
-                        'other_key': 'arm_num',
-                        'fk_subclause': '',
-                    },
-                    {
-                        'field': 'unique_event_name',
-                        'other_table': 'event',
-                        'other_key': 'unique_event_name',
-                        'fk_subclause': '',
-                    },
-                ]
-            },
-            {
-                'tablename': 'event_instrument',
-                'primary_key': 'id',
-                'primary_key_type': 'INTEGER',
-                'coldefs': [
-                    {
-                        'field': 'unique_event_name',
-                        'type': 'TEXT'
-                    },
-                    {
-                        'field': 'instrument_name',
-                        'type': 'TEXT'
-                    }
-                ],
-                'foreign_keys': [
-                    {
-                        'field': 'unique_event_name',
-                        'other_table': 'event',
-                        'other_key': 'unique_event_name',
-                        'fk_subclause': '',
-                    },
-                    {
-                        'field': 'instrument_name',
-                        'other_table': 'instrument',
-                        'other_key': 'instrument_name',
-                        'fk_subclause': '',
-                    },
-                ]
-            },
-            {
-                'tablename': 'instrument_field',
-                'primary_key': 'id',
-                'primary_key_type': 'INTEGER',
-                'coldefs': [
-                    {
-                        'field': 'instrument_name',
-                        'type': 'TEXT'
-                    },
-                    {
-                        'field': 'field_name',
-                        'type': 'TEXT'
-                    }
-                ],
-                'foreign_keys': [
-                    {
-                        'field': 'instrument_name',
-                        'other_table': 'instrument',
-                        'other_key': 'instrument_name',
-                        'fk_subclause': '',
-                    },
-                    {
-                        'field': 'field_name',
-                        'other_table': 'field',
-                        'other_key': 'field_name',
-                        'fk_subclause': '',
-                    },
-                ]
-            },
-        ]
