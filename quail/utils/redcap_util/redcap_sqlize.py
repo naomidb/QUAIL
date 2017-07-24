@@ -33,6 +33,7 @@ class Instrumentor(file_util):
         ))
         texttype = repeat('TEXT')
         field_names.insert(0, 'redcap_event_name')
+        field_names.insert(1, '{}_complete'.format(instrument_name))
         if instrument_name != self.unique_field['form_name']:
             field_names.insert(0, self.unique_field['field_name'])
 

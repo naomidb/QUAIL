@@ -191,19 +191,25 @@ def gen_data(quail_conf, project_name):
             vals = []
             if type(data) != type([]):
                 data = [data]
+            empty_num = 0
             for item in data:
                 val = [str(item.setdefault(col, None)) for col in cols]
                 val = [s.replace("\'","\'\'") if s != 'None' else '' for s in val]
                 nonempty = [s for s in val if s != '']
-                required_fields = 2 if tablename == subject_form else 3
-                if len(nonempty) >= required_fields:
+                # every form will have a unique_field, redcap_event_name and form_complete
+                # the subject_form will also specify the primary key
+                required_fields = 3 if tablename == subject_form else 4
+                if len(nonempty) > required_fields:
                     vals.append(val)
                 else:
+                    empty_num += 1
                     pass
 
             print('Writing {} many rows to the {} table'.format(len(vals), tablename))
-            db.insert(tablename=tablename, cols=cols, vals=vals).execute()
-            db.commit()
+            print('Redcap provided {} many empty records for {}'.format(empty_num, tablename))
+            if vals:
+                db.insert(tablename=tablename, cols=cols, vals=vals).execute()
+                db.commit()
 
     print('Done with inserting data')
 
