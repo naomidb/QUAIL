@@ -27,7 +27,11 @@ class Query(object):
         In the future we will want the function definition in the sql
         to define which of the execute functions we want
         """
-        return self.cursor.executescript(self.query)
+        try:
+            return self.cursor.executescript(self.query)
+        except Exception as err:
+            print(self.query)
+            raise err
 
 class Database(object):
 

@@ -2,13 +2,25 @@
 /*
 name create_table
 
-Takes a tables argument that contains objects of the form below
+Takes a tables argument that contains objects of the form below.
+
+You can have a single primary key or multiple primary keys that are
+unique together. Utilize either the primary key and primary key type
+or the primary keys list. Not both
+
 NOTE make sure that the tables are in the right order for foreign
 key relations
+
 tables:
     - tablename: 'my_table'
       primary_key: 'sql_id'
-      primary_key_tyep: 'TEXT'
+      primary_key_type: 'TEXT'
+      primary_keys: [
+          - field: 'primary_key1',
+            type: 'TEXT'
+          - field: 'primary_key2',
+            type: 'INTEGER'
+      ]
       coldefs:
           - field: 'my_field1'
             type: 'INTEGER'
@@ -20,18 +32,37 @@ tables:
             other_key: 'other_table_primary_key'
             fk_subclause: 'ON DELETE SET NULL'
 */
+-- can create multiple tables at the same time
 {% for table in tables -%}
 CREATE TABLE IF NOT EXISTS {{table.tablename}}(
-{{table.primary_key}} {{table.primary_key_type}} PRIMARY KEY
-{%- if table.coldefs -%},{%- endif -%}
+-- single primary key
+{% if table.primary_key -%}
+  {{table.primary_key}} {{table.primary_key_type}} PRIMARY KEY
+{%- endif %}
+-- unique together column definitions
+{% if table.primary_keys -%}
+  {%- for def in table.primary_keys -%}
+  {{def.field}} {{def.type}} NOT NULL{% if not loop.last %},{% endif %}
+  {%- endfor -%}
+{%- endif -%}
+-- column definitions for the other columns
+{% if table.coldefs -%},{%- endif -%}
 {%- for def in table.coldefs -%}
-{{def.field}} {{def.type}}{% if not loop.last %},{% endif %}
-{%- endfor -%}
-{%- if table.foreign_keys -%},{%- endif -%}
+  {{def.field}} {{def.type}}{% if not loop.last %},{% endif %}
+{%- endfor %}
+-- primary key constraint for unique together primary keys
+{% if table.primary_keys -%},
+PRIMARY KEY (
+  {%- for def in table.primary_keys -%}
+  {{def.field}}{% if not loop.last %},{% endif %}
+  {%- endfor -%}
+  ){%- endif %}
+-- foreign key constraints, optional
+{% if table.foreign_keys -%},{%- endif -%}
 {%- for fk in table.foreign_keys -%}
-FOREIGN KEY ({{fk.field}})
-REFERENCES {{fk.other_table}}({{fk.other_key}}) {{fk.fk_sub_clause}}{% if not loop.last %},{% endif %}
-{%- endfor -%}
+  FOREIGN KEY ({{fk.field}})
+  REFERENCES {{fk.other_table}}({{fk.other_key}}) {{fk.fk_sub_clause}}{% if not loop.last %},{% endif %}
+{%- endfor %}
 );
 {% endfor %}
 
@@ -60,6 +91,33 @@ VALUES
 '{{- item -}}'{% if not loop.last %},{% endif %}
 {%- endfor -%}){% if not loop.last %},{% endif %}
 {% endfor -%};
+
+/*
+name batch_insert
+
+Takes the same things as insert, but takes a list of inserts
+dictionaries.
+batches: [
+  tablename: 'my_table'
+  cols: ['id', 'favorite_color', 'favorite_movie']
+  vals: [
+    [1, 'green', 'James and the Giant Peach'],
+    [2, 'red', 'Spiderman'],
+  ]
+]
+*/
+{% for batch in batches %}
+INSERT INTO {{ batch.tablename }}(
+{%- for col in batch.cols -%}
+{{- col -}}{% if not loop.last %},{% endif %}
+{%- endfor -%})
+VALUES
+{% for val in batch.vals -%}
+({%- for item in val -%}
+'{{- item -}}'{% if not loop.last %},{% endif %}
+{%- endfor -%}){% if not loop.last %},{% endif %}
+{% endfor -%};
+{% endfor %}
 
 
 /*

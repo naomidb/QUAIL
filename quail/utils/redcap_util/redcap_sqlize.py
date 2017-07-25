@@ -32,10 +32,12 @@ class Instrumentor(file_util):
             [export_name for export_name, value, display in parsed_select_choices]
         ))
         texttype = repeat('TEXT')
-        field_names.insert(0, 'redcap_event_name')
         field_names.insert(1, '{}_complete'.format(instrument_name))
+        # the instrument which contains the unique field will already define these
+        # and use them as primary keys
         if instrument_name != self.unique_field['form_name']:
             field_names.insert(0, self.unique_field['field_name'])
+            field_names.insert(1, 'redcap_event_name')
 
         return zip(field_names, texttype)
 
@@ -59,9 +61,14 @@ class Instrumentor(file_util):
         }
 
     def get_instrument_table(self, instrument_name):
+        primary_key = None
+        primary_key_type = None
+        primary_keys = []
         if instrument_name == self.unique_field['form_name']:
-            primary_key = self.unique_field['field_name']
-            primary_key_type = 'TEXT'
+            primary_keys = [
+                {'field': self.unique_field['field_name'], 'type': 'TEXT'},
+                {'field': 'redcap_event_name', 'type': 'TEXT'}
+            ]
         else:
             primary_key = 'sql_id'
             primary_key_type = 'INTEGER'
@@ -70,6 +77,7 @@ class Instrumentor(file_util):
             'name': instrument_name,
             'primary_key': primary_key,
             'primary_key_type': primary_key_type,
+            'primary_keys': primary_keys,
             'fields': self.fields_for_instrument(instrument_name),
             'foreign_keys': [
                 # fix this for tuesday

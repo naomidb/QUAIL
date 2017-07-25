@@ -98,13 +98,14 @@ def gen_meta(quail_conf, project_name):
     database_path = file_util.join([most_recent_batch_path, 'metadata.db'])
     file_util.write(database_path)
     db = dynamic_schema(database_path)
+    batch_size = 500
 
-    arm = redcap_metadata.Arm(most_recent_batch_path)
-    event = redcap_metadata.Event(most_recent_batch_path)
-    instrument = redcap_metadata.Instrument(most_recent_batch_path)
-    instrument_event = redcap_metadata.InstrumentEvent(most_recent_batch_path)
-    field = redcap_metadata.Field(most_recent_batch_path)
-    project = redcap_metadata.Project(most_recent_batch_path)
+    arm = redcap_metadata.Arm(most_recent_batch_path, batch_size)
+    event = redcap_metadata.Event(most_recent_batch_path, batch_size)
+    instrument = redcap_metadata.Instrument(most_recent_batch_path, batch_size)
+    instrument_event = redcap_metadata.InstrumentEvent(most_recent_batch_path, batch_size)
+    field = redcap_metadata.Field(most_recent_batch_path, batch_size)
+    project = redcap_metadata.Project(most_recent_batch_path, batch_size)
 
     db.create_table(**{
         'tables': [
@@ -117,23 +118,28 @@ def gen_meta(quail_conf, project_name):
         ]
     }).executescript()
 
-    db.insert(**arm.insert_data).execute()
+    db.batch_insert(batches=arm.insert_data).executescript()
     db.commit()
-    db.insert(**event.insert_data).execute()
+    db.batch_insert(batches=event.insert_data).executescript()
     db.commit()
-    db.insert(**instrument.insert_data).execute()
+    db.batch_insert(batches=instrument.insert_data).executescript()
     db.commit()
-    db.insert(**instrument_event.insert_data).execute()
+    db.batch_insert(batches=instrument_event.insert_data).executescript()
     db.commit()
-    db.insert(**field.insert_data).execute()
+    db.batch_insert(batches=field.insert_data).executescript()
     db.commit()
-    db.insert(**project.insert_data).execute()
+    db.batch_insert(batches=project.insert_data).executescript()
     db.commit()
 
 def gen_data(quail_conf, project_name):
     """
     Generates the data.db in the most recent batch folder of the project.
     This database contains all the data from the redcap data pull.
+
+    Note that with python 3.4.2 there is a limit to the amount of rows
+    that can be put in with a single insert into statement using the
+    sqlite3 module which pyyesql uses under the covers. The error you
+    will see is something about a compound select.
 
     Here the subjects are in a table along with tables of the forms.
     The database also has lookup tables for the dropdowns, checkboxes and
@@ -148,6 +154,8 @@ def gen_data(quail_conf, project_name):
     database_path = file_util.join([most_recent_batch_path, 'data.db'])
     file_util.write(database_path)
     db = redcap_schema(database_path)
+    # in the future make the batch size configurable
+    batch_size = 500
 
     print('Loading metadata...')
     instrumentor = redcap_sqlize.Instrumentor(most_recent_batch_path)
@@ -188,11 +196,18 @@ def gen_data(quail_conf, project_name):
             else:
                 cols = [row[name_index] for row in table_info]
             cols.append('redcap_event_name')
-            vals = []
             if type(data) != type([]):
                 data = [data]
             empty_num = 0
+            written_num = 0
+            batches = []
             for item in data:
+                if (not len(batches)) or (len(batches[-1]['vals']) == batch_size):
+                    batches.append({
+                        'tablename': tablename,
+                        'cols': copy(cols),
+                        'vals': []
+                    })
                 val = [str(item.setdefault(col, None)) for col in cols]
                 val = [s.replace("\'","\'\'") if s != 'None' else '' for s in val]
                 nonempty = [s for s in val if s != '']
@@ -200,16 +215,16 @@ def gen_data(quail_conf, project_name):
                 # the subject_form will also specify the primary key
                 required_fields = 3 if tablename == subject_form else 4
                 if len(nonempty) > required_fields:
-                    vals.append(val)
+                    batches[-1]['vals'].append(val)
+                    written_num += 1
                 else:
                     empty_num += 1
-                    pass
 
-            print('Writing {} many rows to the {} table'.format(len(vals), tablename))
-            print('Redcap provided {} many empty records for {}'.format(empty_num, tablename))
-            if vals:
-                db.insert(tablename=tablename, cols=cols, vals=vals).execute()
+            if len(batches[0]['vals']):
+                db.batch_insert(batches=batches).executescript()
                 db.commit()
+            print('Wrote {} many rows to the {} table'.format(written_num, tablename))
+            print('Redcap provided {} many empty records for {}'.format(empty_num, tablename))
 
     print('Done with inserting data')
 
