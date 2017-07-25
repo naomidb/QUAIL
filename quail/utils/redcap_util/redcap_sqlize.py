@@ -37,7 +37,7 @@ class Instrumentor(file_util):
         # and use them as primary keys
         if instrument_name != self.unique_field['form_name']:
             field_names.insert(0, self.unique_field['field_name'])
-            field_names.insert(1, 'redcap_event_name')
+            field_names.insert(0, 'redcap_event_name')
 
         return zip(field_names, texttype)
 

@@ -82,8 +82,8 @@ class InstrumentEvent(TableMaker):
         super().__init__(None, batch_root, 'instrument_event.json', 'instrument_event', insert_batch_size)
 
 class InstrumentEvent(TableMaker):
-    def __init__(self, batch_root):
-        super().__init__(None, batch_root, 'instrument_event.json', 'instrument_event')
+    def __init__(self, batch_root, insert_batch_size):
+        super().__init__(None, batch_root, 'instrument_event.json', 'instrument_event', insert_batch_size)
 
 class Field(TableMaker):
     def __init__(self, batch_root, insert_batch_size):

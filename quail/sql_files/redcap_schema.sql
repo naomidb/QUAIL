@@ -42,18 +42,60 @@ batch_path TEXT
 name create_instrument
 
 Creates a table for an instrument
-Takes an instance of an instrument object
+Takes the following dictionary
+primary_key and primary_keys are mutually exclusive
+
+primary_key
+primary_key_type
+primary_keys: [
+  - field:
+    type:
+]
+fields: [
+  - (field, type)
+]
+foreign_keys: [
+  - field:
+    other_table:
+    other_key:
+    fk_sub_clause:
+]
+
 */
 CREATE TABLE IF NOT EXISTS {{name}}(
-{{primary_key}} {{primary_key_type}} PRIMARY KEY,
+-- single primary key
+{% if primary_key -%}
+{{primary_key}} {{primary_key_type}} PRIMARY KEY
+{%- if fields -%},{%- endif %}
+{%- endif -%}
+
+-- unique together column definitions
+{% if primary_keys -%}
+{%- for def in primary_keys -%}
+{{def.field}} {{def.type}} NOT NULL{% if not loop.last %},{% endif %}
+{%- endfor -%}
+{%- if fields -%},{%- endif -%}
+{%- endif %}
+-- fields
 {% for field_name, field_type in fields -%}
   {{-field_name}} {{field_type-}}
 {%- if not loop.last %},{% endif -%}
 {%- endfor -%}
-{%- for fk in foreign_keys %},
+{%- if primary_keys %},
+
+-- multiple primary keys, for when the unique field form has many events
+PRIMARY KEY (
+{%- for def in primary_keys -%}
+{{def.field}}{% if not loop.last %},{% endif %}
+{%- endfor -%}
+){%- endif -%}
+
+{%- if foreign_keys -%},
+{%- for fk in foreign_keys %}
 FOREIGN KEY ({{fk.field}})
 REFERENCES {{fk.other_table}}({{fk.other_key}}) {{fk.fk_sub_clause}}{% if not loop.last %},{% endif %}
-{%- endfor %}
+{%- endfor -%}
+{%- endif -%}
 );
 
 
