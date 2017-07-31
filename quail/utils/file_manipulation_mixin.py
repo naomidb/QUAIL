@@ -1,5 +1,6 @@
 import os
 import json
+import shutil
 
 import yaml
 
@@ -18,6 +19,10 @@ class FileManipulationMixin(object):
     @staticmethod
     def full_path(path):
         return os.path.abspath(path)
+
+    @staticmethod
+    def copyfile(src, dest):
+        return shutil.copyfile(src, dest)
 
     @staticmethod
     def cwd():

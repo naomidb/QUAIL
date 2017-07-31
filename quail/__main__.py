@@ -5,6 +5,9 @@ quail redcap get_meta (<project_name>) [ -q <quail.conf.yaml> ]
 quail redcap get_data (<project_name>) [ -q <quail.conf.yaml> ]
 quail redcap gen_meta (<project_name>) [ -q <quail.conf.yaml> ]
 quail redcap gen_data (<project_name>) [ -q <quail.conf.yaml> ]
+quail dropper generate ( <quail.conf.yaml> <dropper_name> <url> <user> <pass> )
+quail dropper get_meta (<dropper_name>) [ -q <quail.conf.yaml> ]
+quail dropper get_data (<dropper_name>) [ -q <quail.conf.yaml> ]
 
 Options:
   -h --help                                     show this message and exit
@@ -35,6 +38,7 @@ from docopt import docopt
 from quail.utils.file_manipulation_mixin import FileManipulationMixin as file_util
 from quail.actions import install
 from quail.actions import redcap
+from quail.actions import dropper
 
 def find_local_config(args):
     """
@@ -71,8 +75,19 @@ def main(args):
         install.run(args.get('<root>'))
 
     if args.get('dropper'):
-        if args.get('image_metadata'):
-            actions.dropper.get_metadata(**conf)
+        conf = {
+            'dropper_name': args.get('<project_name>'),
+            'quail_conf': qc
+        }
+        if args.get('generate'):
+            conf['url'] = args.get('<url>')
+            conf['user'] = args.get('<user>')
+            conf['password'] = args.get('<password>')
+            dropper.generate(conf)
+        elif args.get('get_meta'):
+            dropper.get_metadata(**conf)
+        elif args.get('get_data'):
+            dropper.get_data(**conf)
 
     if args.get('redcap'):
         conf = {

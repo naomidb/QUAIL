@@ -1,6 +1,7 @@
 import datetime
 from copy import copy
 
+from quail.utils.quail_conf_util import QuailConfig
 from quail.utils.redcap_util import redcap_batch
 from quail.utils.redcap_util import redcap_metadata
 from quail.utils.redcap_util import redcap_sqlize
@@ -13,9 +14,8 @@ def generate(quail_conf_path, name, token, url, init=False):
     """
     print('Generating new redcap project')
 
-    quail_data = file_util.read(quail_conf_path, 'yaml')
-    file_util.write(quail_conf_path + '.bak', quail_data, 'yaml')
-    quail_root = quail_data.get('quail_root')
+    config = QuailConfig(quail_conf_path)
+    quail_root = config.get_root()
 
     project_path = file_util.join([quail_root, 'sources', name])
     project_conf_path = file_util.join([project_path, 'redcap.conf.yaml'])
@@ -31,12 +31,12 @@ def generate(quail_conf_path, name, token, url, init=False):
             'free_text': ''
         }
     }
-    quail_data['sources'][name] = project_data
+    config.add_source(name, project_data)
 
     file_util.mkdir(project_path)
     file_util.mkdir(project_batch_path)
     file_util.write(project_conf_path, project_data, 'yaml')
-    file_util.write(quail_conf_path, quail_data, 'yaml')
+    config.save()
     print('Generated new redcap project {}'.format(name))
     if init:
         get_data(quail_conf_path, name, True)
@@ -46,9 +46,8 @@ def get_meta(quail_conf, project_name):
     Gets the metadata for a particular redcap
     """
     print('Pulling metadata for {}'.format(project_name))
-    quail_data = file_util.read(quail_conf, 'yaml')
-    file_util.write(quail_conf + '.bak', quail_data, 'yaml')
-    proj_data = copy(quail_data['sources'][project_name])
+    config = QuailConfig(quail_conf)
+    proj_data = config.get_source(project_name)
     del proj_data['notes']
     project = redcap_batch.Batcher(**proj_data)
     project.pull_metadata()
@@ -62,16 +61,16 @@ def get_data(quail_conf, project_name, pull_metadata=True):
     This function also adds the unique_field metadata to the quail.conf.yaml
     under the sources key.
     """
+    config = QuailConfig(quail_conf)
     if pull_metadata:
         get_meta(quail_conf, project_name)
     print('Pulling data for {}'.format(project_name))
+
     start = datetime.datetime.now()
-    quail_data = file_util.read(quail_conf, 'yaml')
-    proj_data = copy(quail_data['sources'][project_name])
+    proj_data = get_source(project_name)
     del proj_data['notes']
     project = redcap_batch.Batcher(**proj_data)
     project.pull_data()
-    quail_data['sources'][project_name]['notes']['unique_field'] = project.unique_field
     end = datetime.datetime.now()
     batch = {
         'project_name': project_name,
@@ -81,10 +80,10 @@ def get_data(quail_conf, project_name, pull_metadata=True):
         'start': str(start),
         'end': str(end),
     }
-    project_batches = quail_data['batches'].setdefault(project_name, {})
-    project_batches.setdefault(project.date, batch)
     file_util.write(file_util.join([batch['path'], 'batch_info.json']), batch, 'json')
-    file_util.write(quail_conf, quail_data, 'yaml')
+    config.add_batch(project_name, project.date, batch)
+    config.add_source_notes(project_name, 'unique_field', project.unique_field)
+    config.save()
     print('Done pulling data for {}'.format(project_name))
 
 def gen_meta(quail_conf, project_name):
@@ -92,9 +91,9 @@ def gen_meta(quail_conf, project_name):
     Generates the metadata.db in the most recent batch folder of the project.
     This database contains information about how the redcap is set up
     """
-    quail_data = file_util.read(quail_conf, 'yaml')
-    project_batches = list(quail_data['batches'][project_name].items())
-    most_recent_batch_path = sorted(project_batches, key=lambda i: i[0])[-1][1]['path']
+    config = QuailConfig(quail_conf)
+    most_recent_batch_path = config.get_most_recent_batch(project_name)
+
     database_path = file_util.join([most_recent_batch_path, 'metadata.db'])
     file_util.write(database_path)
     db = dynamic_schema(database_path)
@@ -147,9 +146,9 @@ def gen_data(quail_conf, project_name):
 
     See docs/quail.org for a description of its schema
     """
-    quail_data = file_util.read(quail_conf, 'yaml')
-    project_batches = list(quail_data['batches'][project_name].items())
-    most_recent_batch_path = sorted(project_batches, key=lambda i: i[0])[-1][1]['path']
+    config = QuailConfig(quail_conf)
+    most_recent_batch_path = config.get_most_recent_batch(project_name)
+
     redcap_data_path = file_util.join([most_recent_batch_path, 'redcap_data_files'])
     database_path = file_util.join([most_recent_batch_path, 'data.db'])
     file_util.write(database_path)
