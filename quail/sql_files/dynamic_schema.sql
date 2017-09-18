@@ -37,31 +37,31 @@ tables:
 CREATE TABLE IF NOT EXISTS {{table.tablename}}(
 -- single primary key
 {% if table.primary_key -%}
-  {{table.primary_key}} {{table.primary_key_type}} PRIMARY KEY
+  "{{table.primary_key}}" {{table.primary_key_type}} PRIMARY KEY
 {%- endif %}
 -- unique together column definitions
 {% if table.primary_keys -%}
   {%- for def in table.primary_keys -%}
-  {{def.field}} {{def.type}} NOT NULL{% if not loop.last %},{% endif %}
+  "{{def.field}}" {{def.type}} NOT NULL{% if not loop.last %},{% endif %}
   {%- endfor -%}
 {%- endif -%}
 -- column definitions for the other columns
 {% if table.coldefs -%},{%- endif -%}
 {%- for def in table.coldefs -%}
-  {{def.field}} {{def.type}}{% if not loop.last %},{% endif %}
+  "{{def.field}}" {{def.type}}{% if not loop.last %},{% endif %}
 {%- endfor %}
 -- primary key constraint for unique together primary keys
 {% if table.primary_keys -%},
 PRIMARY KEY (
   {%- for def in table.primary_keys -%}
-  {{def.field}}{% if not loop.last %},{% endif %}
+  "{{def.field}}"{% if not loop.last %},{% endif %}
   {%- endfor -%}
   ){%- endif %}
 -- foreign key constraints, optional
 {% if table.foreign_keys -%},{%- endif -%}
 {%- for fk in table.foreign_keys -%}
-  FOREIGN KEY ({{fk.field}})
-  REFERENCES {{fk.other_table}}({{fk.other_key}}) {{fk.fk_sub_clause}}{% if not loop.last %},{% endif %}
+  FOREIGN KEY ("{{fk.field}}")
+  REFERENCES {{fk.other_table}}("{{fk.other_key}}") {{fk.fk_sub_clause}}{% if not loop.last %},{% endif %}
 {%- endfor %}
 );
 {% endfor %}
@@ -83,7 +83,7 @@ inserts:
 */
 INSERT INTO {{ tablename }}(
 {%- for col in cols -%}
-{{- col -}}{% if not loop.last %},{% endif %}
+"{{- col -}}"{% if not loop.last %},{% endif %}
 {%- endfor -%})
 VALUES
 {% for val in vals -%}
@@ -109,7 +109,7 @@ batches: [
 {% for batch in batches %}
 INSERT INTO {{ batch.tablename }}(
 {%- for col in batch.cols -%}
-{{- col -}}{% if not loop.last %},{% endif %}
+"{{- col -}}"{% if not loop.last %},{% endif %}
 {%- endfor -%})
 VALUES
 {% for val in batch.vals -%}
