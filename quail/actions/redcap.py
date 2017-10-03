@@ -53,7 +53,7 @@ def get_meta(quail_conf, project_name):
     project.pull_metadata()
     print('Done pulling metadata for {}'.format(project_name))
 
-def get_data(quail_conf, project_name, pull_metadata=True):
+def get_data(quail_conf, project_name, pull_metadata=False):
     """
     By default gets the metadata and data from an existing generated
     redcap project in the quail sources
@@ -67,7 +67,7 @@ def get_data(quail_conf, project_name, pull_metadata=True):
     print('Pulling data for {}'.format(project_name))
 
     start = datetime.datetime.now()
-    proj_data = get_source(project_name)
+    proj_data = config.get_source(project_name)
     del proj_data['notes']
     project = redcap_batch.Batcher(**proj_data)
     project.pull_data()
