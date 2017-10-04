@@ -228,6 +228,13 @@ def gen_data(quail_conf, project_name):
     print('Done with inserting data')
 
 def make_import_files(quail_conf, project_name):
+    """
+    This action should be used when wanting to upload data to redcap from a quail instance.
+    There in the batches/{project}/{most_recent}/imports folder will be csv files that
+    can be imported via the api.
+
+    If the import fails, it may be that the file is too big
+    """
     config = QuailConfig(quail_conf)
     most_recent_batch_path = config.get_most_recent_batch(project_name)
     batch_imports_path = file_util.join([most_recent_batch_path, 'imports'])
