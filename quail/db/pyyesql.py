@@ -15,6 +15,10 @@ class Query(object):
         self.query = self.template.render(**context)
         return self
 
+    def log(self):
+        print(self.query)
+        return self
+
     def execute(self):
         try:
             return self.cursor.execute(self.query)

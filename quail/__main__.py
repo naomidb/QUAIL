@@ -5,6 +5,7 @@ quail redcap get_meta (<project_name>) [ -q <quail.conf.yaml> ]
 quail redcap get_data (<project_name>) [ -q <quail.conf.yaml> ]
 quail redcap gen_meta (<project_name>) [ -q <quail.conf.yaml> ]
 quail redcap gen_data (<project_name>) [ -q <quail.conf.yaml> ]
+quail redcap make_import_files (<project_name>) [ -q <quail.conf.yaml> ]
 quail dropper generate ( <quail.conf.yaml> <dropper_name> <url> <user> <pass> )
 quail dropper get_meta (<dropper_name>) [ -q <quail.conf.yaml> ]
 quail dropper get_data (<dropper_name>) [ -q <quail.conf.yaml> ]
@@ -108,6 +109,8 @@ def main(args):
             redcap.gen_meta(**conf)
         elif args.get('gen_data'):
             redcap.gen_data(**conf)
+        elif args.get('make_import_files'):
+            redcap.make_import_files(**conf)
 
 
 

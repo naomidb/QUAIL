@@ -5,7 +5,7 @@ from quail.utils.quail_conf_util import QuailConfig
 from quail.utils.redcap_util import redcap_batch
 from quail.utils.redcap_util import redcap_metadata
 from quail.utils.redcap_util import redcap_sqlize
-from quail.db.factories import dynamic_schema, redcap_schema
+from quail.db.factories import dynamic_schema, redcap_schema, import_schema
 from quail.utils.file_manipulation_mixin import FileManipulationMixin as file_util
 
 def generate(quail_conf_path, name, token, url, init=False):
@@ -226,4 +226,29 @@ def gen_data(quail_conf, project_name):
             print('Redcap provided {} many empty records for {}'.format(empty_num, tablename))
 
     print('Done with inserting data')
+
+def make_import_files(quail_conf, project_name):
+    config = QuailConfig(quail_conf)
+    most_recent_batch_path = config.get_most_recent_batch(project_name)
+    batch_imports_path = file_util.join([most_recent_batch_path, 'imports'])
+
+    print('Building import csv files from database at {}'.format(most_recent_batch_path))
+    db = import_schema(most_recent_batch_path)
+
+    forms = db.get_forms().execute().fetchall()
+    forms = [item[0] for item in forms]
+
+    for form in forms:
+        print('Working on form: {}'.format(form))
+        cols = [item[1] for item in db.get_table_info(form=form).execute().fetchall()]
+        if 'sql_id' in cols:
+            cols.remove('sql_id')
+        data = db.get_import_data(cols=cols, form=form).execute()
+        file_util.write_csv(file_util.join([batch_imports_path, form + '.csv']),
+                            cols,
+                            data,
+                            delimiter=',',
+                            quotechar='"')
+    print('Done building import csv files for project: {}'.format(project_name))
+
 

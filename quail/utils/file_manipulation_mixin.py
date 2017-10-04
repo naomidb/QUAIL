@@ -1,6 +1,7 @@
 import os
 import json
 import shutil
+import csv
 
 import yaml
 
@@ -30,6 +31,10 @@ class FileManipulationMixin(object):
 
     @staticmethod
     def path_split(path):
+        """
+        Splits the file into a head and tail
+        /var/www/test => /var/www , test
+        """
         return os.path.split(path)
 
     @staticmethod
@@ -59,24 +64,30 @@ class FileManipulationMixin(object):
                 os.makedirs(path)
 
     @staticmethod
-    def read(path, serialization_format=None, unsafe=False):
+    def read(path, serialization_format=None, unsafe=False, **kwargs):
         """
         Loads data from a file. If a serialization format is passed
         the file will be parsed by that serializer. Only json and
         yaml are currently supported
+
+        CSV is now also supported but will return an instance of a csv DictReader
+        and so will require iteration to get all the items
 
         The unsafe parameter is there to not check that the file exists
         before opening it.
         """
         if unsafe or os.path.isfile(path):
             with open(path, 'r') as infile:
-                text = infile.read()
-                if serialization_format == 'json':
-                    data = json.loads(text)
-                elif serialization_format == 'yaml':
-                    data = yaml.load(text)
+                if serialization_format == 'csv':
+                    return csv.DictReader(infile, **kwargs)
                 else:
-                    data = text
+                    text = infile.read()
+                    if serialization_format == 'json':
+                        data = json.loads(text)
+                    elif serialization_format == 'yaml':
+                        data = yaml.load(text)
+                    else:
+                        data = text
             return data
         else:
             return None
@@ -102,3 +113,15 @@ class FileManipulationMixin(object):
                                         default_flow_style=False))
             else:
                 outfile.write(data)
+
+    @staticmethod
+    def write_csv(path, header, data, **kwargs):
+        """
+        Given a list of tuples and a header, writes them to a file as a csv
+        """
+        prefix, filename = os.path.split(path)
+        FileManipulationMixin.mkdir(prefix)
+        with open(path, 'w') as outfile:
+            writer = csv.writer(outfile, **kwargs)
+            writer.writerow(header)
+            writer.writerows(data)
