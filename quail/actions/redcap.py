@@ -233,7 +233,8 @@ def make_import_files(quail_conf, project_name):
     There in the batches/{project}/{most_recent}/imports folder will be csv files that
     can be imported via the api.
 
-    If the import fails, it may be that the file is too big
+    If the import fails, it may be that the file is too big. If you utilize the "pigeon"
+    redcap file importer, this problem will go away
     """
     config = QuailConfig(quail_conf)
     most_recent_batch_path = config.get_most_recent_batch(project_name)

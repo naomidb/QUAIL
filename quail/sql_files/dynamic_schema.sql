@@ -107,16 +107,18 @@ batches: [
 ]
 */
 {% for batch in batches %}
+{% if batch.vals|length > 0 %}
 INSERT INTO {{ batch.tablename }}(
 {%- for col in batch.cols -%}
 "{{- col -}}"{% if not loop.last %},{% endif %}
 {%- endfor -%})
 VALUES
-{% for val in batch.vals -%}
-({%- for item in val -%}
+({% for val in batch.vals -%}
+{%- for item in val -%}
 '{{- item -}}'{% if not loop.last %},{% endif %}
-{%- endfor -%}){% if not loop.last %},{% endif %}
-{% endfor -%};
+{%- endfor -%}{% if not loop.last %},{% endif %}
+{% endfor -%});
+{% endif %}
 {% endfor %}
 
 
