@@ -3,6 +3,7 @@ import datetime
 
 from quail.utils.file_manipulation_mixin import FileManipulationMixin as file_util
 from quail.utils.csv_to_json import csv_to_json
+from quail.utils.redcap_util.data_quality import record_has_data
 from cappy import API
 
 class Batcher(file_util):
@@ -48,7 +49,8 @@ class Batcher(file_util):
         self.metadata_date = self.path_split(newest_metadata)[1]
         self.date = today
 
-        self.unique_field = metadata[0]['field_name']
+        self.unique_field = metadata[0]
+        self.unique_field_name = metadata[0]['field_name']
         self.instruments = list(set([item['form_name'] for item in metadata]))
         self.event_instrument_mapping = {}
         for item in instrument_event:
@@ -60,7 +62,7 @@ class Batcher(file_util):
             event_list = self.event_instrument_mapping.get(instrument)
             if not event_list:
                 continue
-            res = self.api.export_records(fields=[self.unique_field, self.event_key],
+            res = self.api.export_records(fields=[self.unique_field_name, self.event_key],
                                           events=list(event_list),
                                           forms=[instrument],
                                           adhoc_redcap_options={
@@ -68,12 +70,13 @@ class Batcher(file_util):
                                           })
             json_data = csv_to_json(str(res.content, 'utf-8'))
             data = json.loads(json_data)
+            if instrument != self.unique_field['form_name']:
+                data = [record for record in data if record_has_data(record,
+                                                                     unique_field_name=unique_field_name,
+                                                                     form_record_name=instrument)]
+            else:
+                data = [record for record in data if record_has_data(record, form_record_name=instrument)]
             data_path = self.join([self.batch_root, today, 'redcap_data_files', instrument + '.json'])
             self.write(data_path, data, 'json')
             print('Wrote Instrument {} to path {}'.format(instrument, data_path))
-
-        # res = self.api.export_records(fields=[self.unique_field])
-        # subjects = json.loads(str(res.content, 'utf-8'))
-        # for subject in subjects:
-        #     pass
 
