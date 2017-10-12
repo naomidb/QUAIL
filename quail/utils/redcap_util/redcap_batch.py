@@ -2,6 +2,7 @@ import json
 import datetime
 
 from quail.utils.file_manipulation_mixin import FileManipulationMixin as file_util
+from quail.utils.csv_to_json import csv_to_json
 from cappy import API
 
 class Batcher(file_util):
@@ -36,7 +37,7 @@ class Batcher(file_util):
 
     def pull_data(self):
         """
-        The only sneaking thing in here is that the field that determines the primary
+        The only sneaky thing in here is that the field that determines the primary
         key of a subject in redcap is given by the very first metadata item
         """
         newest_metadata = self.get_most_recent_date_path(self.batch_root)
@@ -61,9 +62,18 @@ class Batcher(file_util):
                 continue
             res = self.api.export_records(fields=[self.unique_field, self.event_key],
                                           events=list(event_list),
-                                          forms=[instrument])
-            data = json.loads(str(res.content, 'utf-8'))
+                                          forms=[instrument],
+                                          adhoc_redcap_options={
+                                              'format': 'csv'
+                                          })
+            json_data = csv_to_json(str(res.content, 'utf-8'))
+            data = json.loads(json_data)
             data_path = self.join([self.batch_root, today, 'redcap_data_files', instrument + '.json'])
             self.write(data_path, data, 'json')
-
             print('Wrote Instrument {} to path {}'.format(instrument, data_path))
+
+        # res = self.api.export_records(fields=[self.unique_field])
+        # subjects = json.loads(str(res.content, 'utf-8'))
+        # for subject in subjects:
+        #     pass
+
