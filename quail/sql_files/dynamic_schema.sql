@@ -113,11 +113,11 @@ INSERT INTO {{ batch.tablename }}(
 "{{- col -}}"{% if not loop.last %},{% endif %}
 {%- endfor -%})
 VALUES
-({% for val in batch.vals -%}
-{%- for item in val -%}
+{% for val in batch.vals -%}
+({%- for item in val -%}
 '{{- item -}}'{% if not loop.last %},{% endif %}
-{%- endfor -%}{% if not loop.last %},{% endif %}
-{% endfor -%});
+{%- endfor -%}){% if not loop.last %},{% endif %}
+{% endfor -%};
 {% endif %}
 {% endfor %}
 

@@ -68,11 +68,16 @@ class Batcher(file_util):
                                           adhoc_redcap_options={
                                               'format': 'csv'
                                           })
-            json_data = csv_to_json(str(res.content, 'utf-8'))
+            try:
+                json_data = csv_to_json(str(res.content, 'utf-8'))
+            except:
+                print('Received non-utf8 data for instrument {}'.format(instrument))
+                repr_data = repr(res.content)[2:-1].replace('\\n', '\n')
+                json_data = csv_to_json(repr_data)
             data = json.loads(json_data)
             if instrument != self.unique_field['form_name']:
                 data = [record for record in data if record_has_data(record,
-                                                                     unique_field_name=unique_field_name,
+                                                                     unique_field_name=self.unique_field_name,
                                                                      form_record_name=instrument)]
             else:
                 data = [record for record in data if record_has_data(record, form_record_name=instrument)]

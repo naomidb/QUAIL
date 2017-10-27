@@ -219,7 +219,7 @@ def gen_data(quail_conf, project_name):
                 else:
                     empty_num += 1
 
-            if len(batches[0]['vals']):
+            if len(batches) and len(batches[0]['vals']):
                 db.batch_insert(batches=batches).executescript()
                 db.commit()
             print('Wrote {} many rows to the {} table'.format(written_num, tablename))
