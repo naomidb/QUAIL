@@ -249,8 +249,11 @@ def make_import_files(quail_conf, project_name):
     for form in forms:
         print('Working on form: {}'.format(form))
         cols = [item[1] for item in db.get_table_info(form=form).execute().fetchall()]
+        descriptive_fields = [item[0] for item in db.get_descriptive_fields(form=form).execute().fetchall()]
         if 'sql_id' in cols:
             cols.remove('sql_id')
+        for field in descriptive_fields:
+            cols.remove(field)
         data = db.get_import_data(cols=cols, form=form).execute()
         file_util.write_csv(file_util.join([batch_imports_path, form + '.csv']),
                             cols,
