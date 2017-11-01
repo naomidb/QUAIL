@@ -6,9 +6,6 @@ quail redcap get_data (<project_name>) [ -q <quail.conf.yaml> ]
 quail redcap gen_meta (<project_name>) [ -q <quail.conf.yaml> ]
 quail redcap gen_data (<project_name>) [ -q <quail.conf.yaml> ]
 quail redcap make_import_files (<project_name>) [ -q <quail.conf.yaml> ]
-quail dropper generate ( <quail.conf.yaml> <dropper_name> <url> <user> <pass> )
-quail dropper get_meta (<dropper_name>) [ -q <quail.conf.yaml> ]
-quail dropper get_data (<dropper_name>) [ -q <quail.conf.yaml> ]
 
 Options:
   -h --help                                     show this message and exit
@@ -74,21 +71,6 @@ def main(args):
 
     if args.get('install'):
         install.run(args.get('<root>'))
-
-    if args.get('dropper'):
-        conf = {
-            'dropper_name': args.get('<project_name>'),
-            'quail_conf': qc
-        }
-        if args.get('generate'):
-            conf['url'] = args.get('<url>')
-            conf['user'] = args.get('<user>')
-            conf['password'] = args.get('<password>')
-            dropper.generate(conf)
-        elif args.get('get_meta'):
-            dropper.get_metadata(**conf)
-        elif args.get('get_data'):
-            dropper.get_data(**conf)
 
     if args.get('redcap'):
         conf = {
