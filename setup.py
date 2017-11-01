@@ -16,9 +16,9 @@ config = {
     'install_requires': [
         'docopt==0.6.2',
         'nose',
-        'cappy==1.1.1',
+        'cappy',
         'pyyaml==3.12',
-        'Jinja2==2.9.6',
+        'Jinja2',
         'python-dateutil==2.6.0',
     ],
     'dependency_links': ["git+https://github.com/ctsit/cappy@1.1.1#egg=cappy-1.1.1"],

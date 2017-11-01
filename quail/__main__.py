@@ -36,7 +36,6 @@ from docopt import docopt
 from quail.utils.file_manipulation_mixin import FileManipulationMixin as file_util
 from quail.actions import install
 from quail.actions import redcap
-from quail.actions import dropper
 
 def find_local_config(args):
     """
