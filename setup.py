@@ -4,14 +4,24 @@ try:
 except ImportError:
     from distutils.core import setup
 
+with open('quail/version.py') as ver:
+    exec(ver.read())
+
 config = {
     'description': 'QUAIL',
     'author': 'Patrick White',
-    'url': 'URL to get it at.',
-    'download_url': 'Where to download it.',
+    'url': 'https://github.com/ctsit/QUAIL',
     'author_email': 'pfwhite9@gmail.com',
-    'version': '0.1.0',
-    'install_requires': ['nose', 'docopt', 'cappy', 'pyyaml'],
+    'version': __version__,
+    'install_requires': [
+        'docopt==0.6.2',
+        'nose',
+        'cappy==1.1.1',
+        'pyyaml==3.12',
+        'Jinja2==2.9.6',
+        'python-dateutil==2.6.0',
+    ],
+    'dependency_links': ["git+https://github.com/ctsit/cappy@1.1.1#egg=cappy-1.1.1"],
     'include_package_data': True,
     'packages': find_packages(),
     'scripts': [],

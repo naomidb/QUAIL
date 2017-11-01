@@ -27,8 +27,6 @@ there can be a secondary_unique_field which is given in a project info export.
 - This has only been tested with longitudinal projects so far and none with repeat forms
 - This process can work to have multiple redcaps in the same database, but one needs to 
 change the settings file for each one.
-- This process was initially written with the bolt driver which is not as good as the
-http api. In the future, this should be refactored out
 
 ** Records
 This project is also meant to pull down the records so that they can be arranged
@@ -40,9 +38,6 @@ not provided, then it will save the records in a `records` directory in the loca
 that the code was run.
 
 *** Directory structure
-Due to inode constraints on macs, batches needed to have a more complex directory 
-structure than initially desired.
-
 Here are some examples about where you would find information in a batch; all paths should
 be prepended with whatever your data root is
 
@@ -51,18 +46,20 @@ be prepended with whatever your data root is
 | the records for all subjects chemistry labs from redcap         | batch_name/redcap_data_files/chemistry_lab.json                             |
 | the records for all subjects neuro labs from redcap             | batch_name/redcap_data_files/neuro_lab.json                                 |
 | the records for all subjects neuro labs from redcap, in batch_2 | batch_2/redcap_data_files/neuro_lab.json                                    |
-| subject 1, event 1_arm_1, chemistry lab                         | batch_name/1/subject_data_1/1_arm_1/chemistry_lab.json                      |
-| subject 1, event 154_arm_1, chemistry lab                       | batch_name/1/subject_data_1/154_arm_1/chemistry_lab.json                    |
-| subject 17, event 1_arm_1, chemistry lab                        | batch_name/1/7/subject_data_17/1_arm_1/chemistry_lab.json                   |
-| subject 17, event 1_arm_1, neuro lab                            | batch_name/1/7/subject_data_17/1_arm_1/neuro_lab.json                       |
-| subject 97, event 1_arm_1, chemistry lab                        | batch_name/9/7/subject_data_97/1_arm_1/chemistry_lab.json                   |
-| subject 97-VA-78, event 1_arm_1, chemistry lab                  | batch_name/9/7/-/V/A/-/7/8/subject_data_97-VA-78/1_arm_1/chemistry_lab.json |
 
 The batch name comes from a combination of the redcap name and the date it was pulled.
-The subject digit/character directory structure comes from the unique field.
 The event comes from the unique event name in redcap.
 The instrument comes from the instrument name plus a '.json' extension.
 
+** SQL metadata database
+Each batch has a metadata database that contains information about the redcap.
+This can be used to explore information about your redcap project and be used to
+build queries on the data.db in the batch root.
+
+*** Limitations
+There are some parts of the code right now that do not utilize the metadata database
+to its fullest. They often will process the raw redcap data instead. This should
+be fixed so that there is one source of truth.
 
 ** SQL database of records
 
@@ -70,33 +67,9 @@ Utilizes sqlite3. Using the `SchemaBuilder` class the database schema is generat
 It has been tested with sqlite3 on a mac.
 
 *** Schema
-The schema is build by running `python build_schema.py`. You will find the generated
-schema file with the name `schema.sql` in the directory in which the script was ran.
-Note that you need a running, initialized neo4j database to build this.
-
-The tables are:
-
-subject
-| col        | type             |
-|------------+------------------|
-| dm_subjid  | text primary key |
-| dm_usubjid | text             |
-
-batch
-| col          | type             |
-|--------------+------------------|
-| batch_name   | text primary key |
-| path         | text             |
-| archive_path | text             |
-| datetime     | text             |
-| redcap_node  | text             |
-
-The redcap_node column in the batch table specifies the neo4j node that contains the information
-about the redcap instance from which the data was pulled
-
-And then there are tables for each form in the neo4j database.
-Those tables have columns for each field and then three additional linking the subject,
-event and batch together. 
+There are tables for each form.
+Those tables have columns for each field and then two additional linking the subject and
+event.
 
 NOTE: there will be a form_complete field with every form which is not listed in the metadata.
 This is something that is a redcap default and will come down with the records so it should be
@@ -106,7 +79,6 @@ my_redcap_form
 | col                | type                 |
 |--------------------+----------------------|
 | sql_id             | integer primary keys |
-| batch_id           | text foreign key     |
 | subject_id         | text foreign key     |
 | my_field_name      | text                 |
 | ...                | ...                  |
@@ -160,69 +132,5 @@ Tables that are drop down lookups are prefixed with 'dropdown'
 - The setup for these databases in terms of what the keys are is not very configurable.
 There is work that will need to be done in order to make it automatically generate the
 right primary keys and foreign key relationships
-- The sql database needs to be represented as a store in the metadata database. That way
-we can see what batches and stuff are pushed in.
-- The database cannot handle checkbox values since these are recieved from redcap in a strange
-triple underscore encoding format
-
-*** Redcap issues
-
-occasionally there will be records that have fields with three '_' in them. These are not
-present in the metadata and usually have either an emptry string or a '0' in them. I dont
-know what these are for but they are ignored when inserting them into the sql database
-because they are not grabbed with the metadata
 
 
-** Redi runs
-Redi runs can be stored in the metadata database as well. 
-
-nodes and their fields
-
-site
-| name   | example |
-|--------+---------|
-| name   |    yale |
-| prefix |     001 |
-| lat    |      45 |
-| long   |      78 |
-
-csv_def
-| name    |  example |
-|---------+----------|
-| subject | STUDY_ID |
-
-redi_configs
-| name    | example              |
-|---------+----------------------|
-| tool    | pigeon               |
-| path    | /configs/pigeon.json |
-| version | 0.0.1                |
-
-redi_run -[:CONTAINED_SUBJECT]->(:Subject)
-| name       | example              |
-|------------+----------------------|
-| time       | tuesday the 8th, 5pm |
-| datapoints | 454                  |
-| duration   | 4 minutes            |
-
-logs
-| name | example                       |
-|------+-------------------------------|
-| tool | lineman                       |
-| path | /redi2/site/logs/lineman.json |
-
-configs will link to the site and the csv_definition.
-runs will be attached to subjects and sites will be attached to redcap nodes
-
-*** Limitations
-- This has not been done
-- redi2 has no way to do this at present, this should probably be a hawkeye module
-
-** Redis database
-Not yet implemented. 
-
-** Frontend
-Not yet implemented.
-
-needs facility to run reports at particular times
- 
