@@ -1,4 +1,4 @@
--e git+git@github.com:ctsit/cappy.git@c0e40a22378bd5ca33021543ab6449839facc718#egg=cappy
+-e git+git@github.com:ctsit/cappy.git@e198fdd8b804bb669633477b606140ea18df91bb#egg=cappy
 certifi==2017.4.17
 chardet==3.0.3
 idna==2.5
