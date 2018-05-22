@@ -12,7 +12,7 @@ def run(root):
          subject_index.db
          quail.conf.yaml
     """
-    verification = input('Using Quail can potentially put you in contact with PHI. Do you understand how to interact with PHI? (y/n)')
+    verification = input('Using Quail can potentially put you in contact with PHI. Do you understand how to interact with PHI? (y/n) ')
     if verification.lower()=='y' or verification.lower()=='yes':
         root = file_util.full_path(root)
         print('Installing QUAIL at {}'.format(root))
