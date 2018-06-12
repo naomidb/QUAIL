@@ -1,14 +1,17 @@
 docstr = """
-Usage: quail install <root>
+Usage: 
+quail install <root>
 quail redcap generate ( <quail.conf.yaml> <project_name> <token> <url> ) [-i --initialize]
 quail redcap get_meta (<project_name>) [ -q <quail.conf.yaml> ]
 quail redcap get_data (<project_name>) [ -q <quail.conf.yaml> ]
 quail redcap gen_meta (<project_name>) [ -q <quail.conf.yaml> ]
 quail redcap gen_data (<project_name>) [ -q <quail.conf.yaml> ]
 quail redcap make_import_files (<project_name>) [ -q <quail.conf.yaml> ]
+quail --version
 
 Options:
   -h --help                                     show this message and exit
+  -v --version                                  show version
   -i --initialize                               generate the redcap project and pull metadata and data
 
 QUAIL:
@@ -36,6 +39,7 @@ from docopt import docopt
 from quail.utils.file_manipulation_mixin import FileManipulationMixin as file_util
 from quail.actions import install
 from quail.actions import redcap
+from quail.version import __version__
 
 def find_local_config(args):
     """
@@ -100,7 +104,7 @@ def cli_run():
     This is the entry point to the script when run from the command line with
     as specified in the setup.py
     """
-    args = docopt(docstr)
+    args = docopt(docstr, version = 'QUAIL %s' % __version__)
     main(args)
 
 if __name__ == '__main__':
