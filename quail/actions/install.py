@@ -34,4 +34,4 @@ def run(root):
 
         print('QUAIL installed at {}'.format(root))
     else:
-        print('Installation cancelled.')
+        exit('Installation cancelled.')
